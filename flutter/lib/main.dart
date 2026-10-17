@@ -84,8 +84,13 @@ class _SFMSLoginPageState extends State<SFMSLoginPage> {
 
       if (!mounted) return;
 
-      final role =
-    profile['role']?.toString().trim().toUpperCase() ?? '';
+      final role = (profile['role'] ??
+              profile['role_code'] ??
+              profile['role_name'])
+          ?.toString()
+          .trim()
+          .toUpperCase() ??
+          '';
 
 if (role.isEmpty) {
   throw Exception(
