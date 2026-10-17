@@ -1,0 +1,381 @@
+﻿class AdminDashboard extends StatefulWidget {
+  const AdminDashboard({super.key});
+
+  @override
+  State<AdminDashboard> createState() => _AdminDashboardState();
+}
+
+class _AdminDashboardState extends State<AdminDashboard> {
+  final SupabaseClient _supabase = Supabase.instance.client;
+
+  bool _loading = true;
+  String? _error;
+
+  int _totalMembers = 0;
+  int _activeMembers = 0;
+  int _activeAccounts = 0;
+  int _staffCount = 0;
+  int _todayTransactions = 0;
+
+  double _totalDeposits = 0;
+  double _todayTransactionAmount = 0;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadDashboard();
+  }
+
+  Future<void> _loadDashboard() async {
+    setState(() {
+      _loading = true;
+      _error = null;
+    });
+
+    try {
+      final memberResult = await _supabase
+          .from('members')
+          .select('id, member_status');
+
+      final accountResult = await _supabase
+          .from('customer_accounts')
+          .select('id, current_balance, status');
+
+      final staffResult = await _supabase
+          .from('staff_profiles')
+          .select('user_id');
+
+      final now = DateTime.now();
+      final startOfDay = DateTime(now.year, now.month, now.day);
+      final startOfTomorrow = startOfDay.add(const Duration(days: 1));
+
+      final transactionResult = await _supabase
+          .from('transactions')
+          .select('id, amount, transaction_date, status')
+          .gte('transaction_date', startOfDay.toIso8601String())
+          .lt('transaction_date', startOfTomorrow.toIso8601String());
+
+      int totalMembers = memberResult.length;
+      int activeMembers = 0;
+
+      for (final member in memberResult) {
+        if (member['member_status'] == 'ACTIVE') {
+          activeMembers++;
+        }
+      }
+
+      int activeAccounts = 0;
+      double totalDeposits = 0;
+
+      for (final account in accountResult) {
+        if (account['status'] == 'ACTIVE') {
+          activeAccounts++;
+
+          final balance = account['current_balance'];
+          if (balance is num) {
+            totalDeposits += balance.toDouble();
+          }
+        }
+      }
+
+      double todayAmount = 0;
+
+      for (final transaction in transactionResult) {
+        if (transaction['status'] == 'COMPLETED') {
+          final amount = transaction['amount'];
+          if (amount is num) {
+            todayAmount += amount.toDouble();
+          }
+        }
+      }
+
+      if (!mounted) return;
+
+      setState(() {
+        _totalMembers = totalMembers;
+        _activeMembers = activeMembers;
+        _activeAccounts = activeAccounts;
+        _staffCount = staffResult.length;
+        _todayTransactions = transactionResult.length;
+        _totalDeposits = totalDeposits;
+        _todayTransactionAmount = todayAmount;
+        _loading = false;
+      });
+    } catch (e) {
+      if (!mounted) return;
+
+      setState(() {
+        _loading = false;
+        _error = e.toString();
+      });
+    }
+  }
+
+  Future<void> _logout() async {
+    await _supabase.auth.signOut();
+
+    if (!mounted) return;
+
+    Navigator.of(context).pushAndRemoveUntil(
+      MaterialPageRoute(
+        builder: (_) => const SFMSLoginPage(),
+      ),
+      (route) => false,
+    );
+  }
+
+  String _formatAmount(double amount) {
+    return '₹${amount.toStringAsFixed(2)}';
+  }
+
+  Widget _statCard({
+    required IconData icon,
+    required String title,
+    required String value,
+    required String subtitle,
+  }) {
+    return Card(
+      elevation: 2,
+      child: Padding(
+        padding: const EdgeInsets.all(20),
+        child: Row(
+          children: [
+            CircleAvatar(
+              radius: 26,
+              child: Icon(icon, size: 28),
+            ),
+            const SizedBox(width: 16),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    title,
+                    style: const TextStyle(
+                      fontSize: 14,
+                      color: Colors.grey,
+                    ),
+                  ),
+                  const SizedBox(height: 6),
+                  Text(
+                    value,
+                    style: const TextStyle(
+                      fontSize: 24,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    subtitle,
+                    style: const TextStyle(fontSize: 12),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text('SFMS Admin Dashboard'),
+        actions: [
+          IconButton(
+            tooltip: 'Refresh',
+            onPressed: _loading ? null : _loadDashboard,
+            icon: const Icon(Icons.refresh),
+          ),
+          IconButton(
+            tooltip: 'Logout',
+            onPressed: _logout,
+            icon: const Icon(Icons.logout),
+          ),
+          const SizedBox(width: 8),
+        ],
+      ),
+      body: RefreshIndicator(
+        onRefresh: _loadDashboard,
+        child: _loading
+            ? const Center(
+                child: CircularProgressIndicator(),
+              )
+            : _error != null
+                ? ListView(
+                    padding: const EdgeInsets.all(24),
+                    children: [
+                      const Icon(
+                        Icons.error_outline,
+                        size: 60,
+                      ),
+                      const SizedBox(height: 16),
+                      const Center(
+                        child: Text(
+                          'Unable to load dashboard',
+                          style: TextStyle(
+                            fontSize: 20,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      ),
+                      const SizedBox(height: 12),
+                      Text(
+                        _error!,
+                        textAlign: TextAlign.center,
+                      ),
+                      const SizedBox(height: 20),
+                      Center(
+                        child: ElevatedButton.icon(
+                          onPressed: _loadDashboard,
+                          icon: const Icon(Icons.refresh),
+                          label: const Text('Try Again'),
+                        ),
+                      ),
+                    ],
+                  )
+                : LayoutBuilder(
+                    builder: (context, constraints) {
+                      final width = constraints.maxWidth;
+
+                      int columns = 1;
+
+                      if (width >= 1200) {
+                        columns = 4;
+                      } else if (width >= 800) {
+                        columns = 3;
+                      } else if (width >= 550) {
+                        columns = 2;
+                      }
+
+                      return ListView(
+                        padding: const EdgeInsets.all(24),
+                        children: [
+                          const Text(
+                            'Welcome to SFMS Administrator',
+                            style: TextStyle(
+                              fontSize: 28,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                          const SizedBox(height: 8),
+                          const Text(
+                            'Small Finance Management System',
+                            style: TextStyle(
+                              fontSize: 16,
+                              color: Colors.grey,
+                            ),
+                          ),
+                          const SizedBox(height: 24),
+
+                          GridView.count(
+                            crossAxisCount: columns,
+                            crossAxisSpacing: 16,
+                            mainAxisSpacing: 16,
+                            childAspectRatio: 2.1,
+                            shrinkWrap: true,
+                            physics: const NeverScrollableScrollPhysics(),
+                            children: [
+                              _statCard(
+                                icon: Icons.people,
+                                title: 'Total Members',
+                                value: '$_totalMembers',
+                                subtitle: 'All registered members',
+                              ),
+                              _statCard(
+                                icon: Icons.person,
+                                title: 'Active Members',
+                                value: '$_activeMembers',
+                                subtitle: 'Currently active',
+                              ),
+                              _statCard(
+                                icon: Icons.account_balance,
+                                title: 'Active Accounts',
+                                value: '$_activeAccounts',
+                                subtitle: 'Customer accounts',
+                              ),
+                              _statCard(
+                                icon: Icons.currency_rupee,
+                                title: 'Total Deposits',
+                                value: _formatAmount(_totalDeposits),
+                                subtitle: 'Current account balances',
+                              ),
+                              _statCard(
+                                icon: Icons.receipt_long,
+                                title: 'Today's Transactions',
+                                value: '$_todayTransactions',
+                                subtitle: 'Transactions today',
+                              ),
+                              _statCard(
+                                icon: Icons.payments,
+                                title: "Today's Amount",
+                                value: _formatAmount(_todayTransactionAmount),
+                                subtitle: 'Completed transactions',
+                              ),
+                              _statCard(
+                                icon: Icons.badge,
+                                title: 'Staff',
+                                value: '$_staffCount',
+                                subtitle: 'Registered staff',
+                              ),
+                            ],
+                          ),
+
+                          const SizedBox(height: 30),
+
+                          Card(
+                            child: Padding(
+                              padding: const EdgeInsets.all(20),
+                              child: Column(
+                                crossAxisAlignment:
+                                    CrossAxisAlignment.start,
+                                children: [
+                                  const Text(
+                                    'Quick Actions',
+                                    style: TextStyle(
+                                      fontSize: 20,
+                                      fontWeight: FontWeight.bold,
+                                    ),
+                                  ),
+                                  const SizedBox(height: 16),
+                                  Wrap(
+                                    spacing: 12,
+                                    runSpacing: 12,
+                                    children: [
+                                      ElevatedButton.icon(
+                                        onPressed: () {},
+                                        icon: const Icon(Icons.person_add),
+                                        label: const Text('Add Member'),
+                                      ),
+                                      ElevatedButton.icon(
+                                        onPressed: () {},
+                                        icon: const Icon(Icons.account_balance),
+                                        label: const Text('Open Account'),
+                                      ),
+                                      ElevatedButton.icon(
+                                        onPressed: () {},
+                                        icon: const Icon(Icons.add_card),
+                                        label: const Text('Deposit'),
+                                      ),
+                                      ElevatedButton.icon(
+                                        onPressed: () {},
+                                        icon: const Icon(Icons.money_off),
+                                        label: const Text('Withdrawal'),
+                                      ),
+                                    ],
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ),
+                        ],
+                      );
+                    },
+                  ),
+      ),
+    );
+  }
+}
+

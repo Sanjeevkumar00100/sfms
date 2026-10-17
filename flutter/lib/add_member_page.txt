@@ -1,0 +1,386 @@
+﻿import 'package:flutter/material.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
+
+class AddMemberPage extends StatefulWidget {
+  const AddMemberPage({super.key});
+
+  @override
+  State<AddMemberPage> createState() => _AddMemberPageState();
+}
+
+class _AddMemberPageState extends State<AddMemberPage> {
+  final SupabaseClient _supabase = Supabase.instance.client;
+
+  final _formKey = GlobalKey<FormState>();
+
+  final _fullNameController = TextEditingController();
+  final _mobileController = TextEditingController();
+  final _alternateMobileController = TextEditingController();
+  final _emailController = TextEditingController();
+  final _occupationController = TextEditingController();
+  final _villageController = TextEditingController();
+  final _talukController = TextEditingController();
+  final _districtController = TextEditingController();
+  final _stateController = TextEditingController();
+  final _pincodeController = TextEditingController();
+  final _addressController = TextEditingController();
+
+  String? _gender;
+  DateTime? _dateOfBirth;
+  bool _saving = false;
+
+  @override
+  void dispose() {
+    _fullNameController.dispose();
+    _mobileController.dispose();
+    _alternateMobileController.dispose();
+    _emailController.dispose();
+    _occupationController.dispose();
+    _villageController.dispose();
+    _talukController.dispose();
+    _districtController.dispose();
+    _stateController.dispose();
+    _pincodeController.dispose();
+    _addressController.dispose();
+    super.dispose();
+  }
+
+  Future<void> _selectDateOfBirth() async {
+    final selected = await showDatePicker(
+      context: context,
+      initialDate: DateTime(1995),
+      firstDate: DateTime(1900),
+      lastDate: DateTime.now(),
+    );
+
+    if (selected != null) {
+      setState(() {
+        _dateOfBirth = selected;
+      });
+    }
+  }
+
+  Future<void> _saveMember() async {
+    if (!_formKey.currentState!.validate()) {
+      return;
+    }
+
+    setState(() {
+      _saving = true;
+    });
+
+    try {
+      final profileResponse = await _supabase.rpc('sfms_get_my_profile');
+
+      final profile = Map<String, dynamic>.from(profileResponse as Map);
+
+      final organizationId = profile['organization_id'];
+      final branchId = profile['branch_id'];
+      final userId = profile['user_id'];
+
+      if (organizationId == null || branchId == null || userId == null) {
+        throw Exception('Admin organization or branch information not found.');
+      }
+
+      final existingMembers = await _supabase
+          .from('members')
+          .select('member_number')
+          .eq('organization_id', organizationId)
+          .order('created_at', ascending: false)
+          .limit(1);
+
+      String memberNumber = 'MEM000001';
+
+      if (existingMembers.isNotEmpty) {
+        final lastNumber =
+            existingMembers.first['member_number']?.toString() ?? '';
+
+        final match = RegExp(r'(\d+)$').firstMatch(lastNumber);
+
+        if (match != null) {
+          final number = int.tryParse(match.group(1)!);
+
+          if (number != null) {
+            memberNumber = 'MEM${(number + 1).toString().padLeft(6, '0')}';
+          }
+        }
+      }
+
+      final today = DateTime.now();
+
+      await _supabase.from('members').insert({
+        'organization_id': organizationId,
+        'branch_id': branchId,
+        'member_number': memberNumber,
+        'full_name': _fullNameController.text.trim(),
+        'date_of_birth': _dateOfBirth?.toIso8601String().split('T').first,
+        'gender': _gender,
+        'mobile': _mobileController.text.trim(),
+        'alternate_mobile': _alternateMobileController.text.trim().isEmpty
+            ? null
+            : _alternateMobileController.text.trim(),
+        'email': _emailController.text.trim().isEmpty
+            ? null
+            : _emailController.text.trim(),
+        'occupation': _occupationController.text.trim().isEmpty
+            ? null
+            : _occupationController.text.trim(),
+        'village': _villageController.text.trim().isEmpty
+            ? null
+            : _villageController.text.trim(),
+        'taluk': _talukController.text.trim().isEmpty
+            ? null
+            : _talukController.text.trim(),
+        'district': _districtController.text.trim().isEmpty
+            ? null
+            : _districtController.text.trim(),
+        'state': _stateController.text.trim().isEmpty
+            ? null
+            : _stateController.text.trim(),
+        'pincode': _pincodeController.text.trim().isEmpty
+            ? null
+            : _pincodeController.text.trim(),
+        'address': _addressController.text.trim().isEmpty
+            ? null
+            : _addressController.text.trim(),
+        'joining_date': today.toIso8601String().split('T').first,
+        'member_status': 'ACTIVE',
+        'kyc_status': 'PENDING',
+        'created_by': userId,
+      });
+
+      if (!mounted) return;
+
+      await showDialog<void>(
+        context: context,
+        builder: (context) {
+          return AlertDialog(
+            title: const Text('Member Created'),
+            content: Text(
+              'Member created successfully.\n\nMember Number: $memberNumber',
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(context),
+                child: const Text('OK'),
+              ),
+            ],
+          );
+        },
+      );
+
+      if (!mounted) return;
+
+      Navigator.pop(context, true);
+    } catch (e) {
+      if (!mounted) return;
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Unable to create member: $e'),
+        ),
+      );
+    } finally {
+      if (mounted) {
+        setState(() {
+          _saving = false;
+        });
+      }
+    }
+  }
+
+  Widget _textField({
+    required TextEditingController controller,
+    required String label,
+    TextInputType? keyboardType,
+    bool required = false,
+  }) {
+    return TextFormField(
+      controller: controller,
+      keyboardType: keyboardType,
+      decoration: InputDecoration(
+        labelText: label,
+        border: const OutlineInputBorder(),
+      ),
+      validator: required
+          ? (value) {
+              if (value == null || value.trim().isEmpty) {
+                return '$label is required';
+              }
+              return null;
+            }
+          : null,
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text('Add Member'),
+      ),
+      body: Form(
+        key: _formKey,
+        child: ListView(
+          padding: const EdgeInsets.all(24),
+          children: [
+            const Text(
+              'Member Information',
+              style: TextStyle(
+                fontSize: 22,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+            const SizedBox(height: 20),
+
+            _textField(
+              controller: _fullNameController,
+              label: 'Full Name',
+              required: true,
+            ),
+            const SizedBox(height: 16),
+
+            _textField(
+              controller: _mobileController,
+              label: 'Mobile Number',
+              keyboardType: TextInputType.phone,
+              required: true,
+            ),
+            const SizedBox(height: 16),
+
+            _textField(
+              controller: _alternateMobileController,
+              label: 'Alternate Mobile',
+              keyboardType: TextInputType.phone,
+            ),
+            const SizedBox(height: 16),
+
+            _textField(
+              controller: _emailController,
+              label: 'Email',
+              keyboardType: TextInputType.emailAddress,
+            ),
+            const SizedBox(height: 16),
+
+            DropdownButtonFormField<String>(
+              value: _gender,
+              decoration: const InputDecoration(
+                labelText: 'Gender',
+                border: OutlineInputBorder(),
+              ),
+              items: const [
+                DropdownMenuItem(
+                  value: 'MALE',
+                  child: Text('Male'),
+                ),
+                DropdownMenuItem(
+                  value: 'FEMALE',
+                  child: Text('Female'),
+                ),
+                DropdownMenuItem(
+                  value: 'OTHER',
+                  child: Text('Other'),
+                ),
+              ],
+              onChanged: (value) {
+                setState(() {
+                  _gender = value;
+                });
+              },
+            ),
+            const SizedBox(height: 16),
+
+            InkWell(
+              onTap: _selectDateOfBirth,
+              child: InputDecorator(
+                decoration: const InputDecoration(
+                  labelText: 'Date of Birth',
+                  border: OutlineInputBorder(),
+                ),
+                child: Text(
+                  _dateOfBirth == null
+                      ? 'Select date'
+                      : '${_dateOfBirth!.day.toString().padLeft(2, '0')}/'
+                          '${_dateOfBirth!.month.toString().padLeft(2, '0')}/'
+                          '${_dateOfBirth!.year}',
+                ),
+              ),
+            ),
+            const SizedBox(height: 16),
+
+            _textField(
+              controller: _occupationController,
+              label: 'Occupation',
+            ),
+            const SizedBox(height: 20),
+
+            const Text(
+              'Address',
+              style: TextStyle(
+                fontSize: 20,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+            const SizedBox(height: 16),
+
+            _textField(
+              controller: _addressController,
+              label: 'Address',
+            ),
+            const SizedBox(height: 16),
+
+            _textField(
+              controller: _villageController,
+              label: 'Village',
+            ),
+            const SizedBox(height: 16),
+
+            _textField(
+              controller: _talukController,
+              label: 'Taluk',
+            ),
+            const SizedBox(height: 16),
+
+            _textField(
+              controller: _districtController,
+              label: 'District',
+            ),
+            const SizedBox(height: 16),
+
+            _textField(
+              controller: _stateController,
+              label: 'State',
+            ),
+            const SizedBox(height: 16),
+
+            _textField(
+              controller: _pincodeController,
+              label: 'PIN Code',
+              keyboardType: TextInputType.number,
+            ),
+            const SizedBox(height: 28),
+
+            SizedBox(
+              height: 50,
+              child: ElevatedButton.icon(
+                onPressed: _saving ? null : _saveMember,
+                icon: _saving
+                    ? const SizedBox(
+                        width: 20,
+                        height: 20,
+                        child: CircularProgressIndicator(
+                          strokeWidth: 2,
+                        ),
+                      )
+                    : const Icon(Icons.save),
+                label: Text(
+                  _saving ? 'Saving...' : 'Save Member',
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}

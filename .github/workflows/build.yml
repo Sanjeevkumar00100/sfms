@@ -1,0 +1,132 @@
+name: Build SFMS
+
+# Run manually from the Actions tab ("Run workflow"), or on every push to main.
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+
+env:
+  # CHANGE THIS before your first Play Store upload. The final package id
+  # becomes "<ORG>.sfms" (e.g. com.yourname.sfms) and can never be changed
+  # after the app is published.
+  APP_ORG: com.sfms
+  APP_NAME: sfms
+
+jobs:
+  android:
+    name: Android APK + AAB
+    runs-on: ubuntu-latest
+    env:
+      # True only when you have added the signing secrets (see README).
+      HAS_KEYSTORE: ${{ secrets.KEYSTORE_BASE64 != '' }}
+    defaults:
+      run:
+        working-directory: flutter
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+
+      - uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          cache: true
+
+      - name: Scaffold Android platform files
+        run: flutter create . --org "$APP_ORG" --project-name "$APP_NAME" --platforms=android
+
+      - name: Add INTERNET permission (release builds need it to reach Supabase)
+        run: |
+          MANIFEST=android/app/src/main/AndroidManifest.xml
+          if ! grep -q "android.permission.INTERNET" "$MANIFEST"; then
+            sed -i '0,/<application/s#<application#<uses-permission android:name="android.permission.INTERNET"/>\n    <application#' "$MANIFEST"
+          fi
+          grep -n "INTERNET" "$MANIFEST"
+
+      - name: Install dependencies
+        run: flutter pub get
+
+      - name: Build APK
+        run: |
+          flutter build apk --release \
+            --build-number=${{ github.run_number }} \
+            --dart-define=SUPABASE_URL=${{ secrets.SUPABASE_URL }} \
+            --dart-define=SUPABASE_ANON_KEY=${{ secrets.SUPABASE_ANON_KEY }}
+
+      - name: Build AAB
+        run: |
+          flutter build appbundle --release \
+            --build-number=${{ github.run_number }} \
+            --dart-define=SUPABASE_URL=${{ secrets.SUPABASE_URL }} \
+            --dart-define=SUPABASE_ANON_KEY=${{ secrets.SUPABASE_ANON_KEY }}
+
+      - name: Sign AAB with your upload key
+        if: env.HAS_KEYSTORE == 'true'
+        env:
+          KEYSTORE_BASE64: ${{ secrets.KEYSTORE_BASE64 }}
+          KEYSTORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
+          KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
+        run: |
+          echo "$KEYSTORE_BASE64" | base64 -d > "$RUNNER_TEMP/upload-keystore.jks"
+          jarsigner -keystore "$RUNNER_TEMP/upload-keystore.jks" \
+            -storepass "$KEYSTORE_PASSWORD" -keypass "$KEY_PASSWORD" \
+            -sigalg SHA256withRSA -digestalg SHA-256 \
+            build/app/outputs/bundle/release/app-release.aab upload
+          jarsigner -verify build/app/outputs/bundle/release/app-release.aab
+          rm -f "$RUNNER_TEMP/upload-keystore.jks"
+
+      - name: Upload APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: sfms-apk
+          path: flutter/build/app/outputs/flutter-apk/app-release.apk
+          if-no-files-found: error
+
+      - name: Upload AAB
+        uses: actions/upload-artifact@v4
+        with:
+          name: sfms-aab${{ env.HAS_KEYSTORE == 'true' && '-signed' || '-UNSIGNED-do-not-upload' }}
+          path: flutter/build/app/outputs/bundle/release/app-release.aab
+          if-no-files-found: error
+
+  windows:
+    name: Windows app
+    runs-on: windows-latest
+    defaults:
+      run:
+        working-directory: flutter
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          cache: true
+
+      - name: Scaffold Windows platform files
+        run: flutter create . --org "$env:APP_ORG" --project-name "$env:APP_NAME" --platforms=windows
+
+      - name: Install dependencies
+        run: flutter pub get
+
+      - name: Build Windows release
+        run: >
+          flutter build windows --release
+          --dart-define=SUPABASE_URL=${{ secrets.SUPABASE_URL }}
+          --dart-define=SUPABASE_ANON_KEY=${{ secrets.SUPABASE_ANON_KEY }}
+
+      - name: Zip the app
+        run: Compress-Archive -Path build\windows\x64\runner\Release\* -DestinationPath sfms-windows.zip
+
+      - name: Upload Windows build
+        uses: actions/upload-artifact@v4
+        with:
+          name: sfms-windows
+          path: flutter/sfms-windows.zip
+          if-no-files-found: error
