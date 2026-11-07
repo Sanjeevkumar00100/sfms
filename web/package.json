@@ -1,0 +1,12 @@
+{
+  "name": "sfms-web-suite",
+  "version": "2.0.0",
+  "description": "Small Finance Management System - Dual Applications Suite for Core Banking Operations & Customer Banking",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "keywords": ["banking", "small-finance", "fintech", "teller", "microfinance"],
+  "author": "SFMS Team",
+  "license": "MIT"
+}

@@ -4,6 +4,8 @@ flutter/.dart_tool/
 flutter/.flutter-plugins*
 flutter/.packages
 flutter/pubspec.lock
+*.apk
+*.aab
 
 # Secrets — NEVER commit these
 *.jks

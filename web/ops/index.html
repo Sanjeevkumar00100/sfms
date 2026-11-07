@@ -1,0 +1,592 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>SFMS Core Banking - Enterprise Operations Console</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="../css/styles.css">
+  <style>
+    :root {
+      --navy-950: #060d17;
+      --navy-900: #0a192f;
+      --navy-800: #112240;
+      --navy-700: #233554;
+      --slate-50: #f8fafc;
+      --slate-100: #f1f5f9;
+      --slate-200: #e2e8f0;
+      --slate-700: #334155;
+      --slate-900: #0f172a;
+      --bank-green: #107559;
+      --bank-green-dark: #094738;
+      --bank-amber: #d97706;
+      --bank-red: #dc2626;
+    }
+    body {
+      background-color: var(--slate-100);
+      color: var(--slate-900);
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    }
+    .active-ops-nav {
+      background-color: var(--navy-800) !important;
+      color: #38bdf8 !important;
+      border-left: 3px solid #38bdf8;
+      font-weight: 600;
+    }
+    .chart-container svg {
+      width: 100%;
+      height: 100%;
+    }
+  </style>
+</head>
+<body class="flex h-screen overflow-hidden text-slate-800">
+
+  <!-- ============================================== -->
+  <!-- 1. LEFT NAVIGATION SIDEBAR (Institutional Navy) -->
+  <!-- ============================================== -->
+  <aside class="w-64 bg-[#0A192F] text-slate-300 flex flex-col justify-between border-r border-slate-800 shadow-xl shrink-0 z-20">
+    <div class="flex-1 flex flex-col overflow-y-auto">
+      
+      <!-- Brand & Institutional Mark -->
+      <div class="p-4 border-b border-slate-800 flex items-center gap-3 bg-[#060D17]">
+        <div class="w-10 h-10 rounded-lg bg-emerald-700 flex items-center justify-center font-bold text-white shadow">
+          🏛️
+        </div>
+        <div>
+          <div class="font-extrabold text-white text-sm tracking-wider">SFMS CORE</div>
+          <div class="text-[10px] text-emerald-400 font-semibold tracking-widest uppercase">Banking Operations</div>
+        </div>
+      </div>
+
+      <!-- Active Staff Persona & Role Switcher -->
+      <div class="p-3 mx-3 my-3 bg-[#112240] rounded-lg border border-slate-700/60">
+        <div class="flex justify-between items-center text-[10px] text-slate-400 font-semibold uppercase mb-1">
+          <span>Active Persona</span>
+          <span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
+        </div>
+        <select id="ops-role-select" class="w-full bg-[#0A192F] border border-slate-700 text-white text-xs rounded p-2 outline-none focus:border-sky-400 font-medium" onchange="handleRoleSwitch(this.value)">
+          <option value="BRANCH_MANAGER">Branch Manager (Alok Verma)</option>
+          <option value="CASHIER">Cashier / Teller (Neha Sharma)</option>
+          <option value="CREDIT_MANAGER">Credit Manager (Rohan Gupta)</option>
+          <option value="CSO">Customer Service Officer (Meena Rao)</option>
+          <option value="ACCOUNTANT">Branch Accountant (Sunil Joshi)</option>
+          <option value="COMPLIANCE_OFFICER">Compliance Officer (HO)</option>
+          <option value="AUDITOR">Concurrent Auditor (Pooja Iyer)</option>
+          <option value="SUPER_ADMIN">Super Administrator (HO)</option>
+        </select>
+        <div class="mt-2 text-[11px] text-slate-400 flex justify-between">
+          <span>Branch:</span>
+          <span class="text-sky-300 font-mono font-bold" id="badge-branch-id">BR001 (Metro Central)</span>
+        </div>
+      </div>
+
+      <!-- Navigation Links (15 Standard Categories) -->
+      <nav class="px-2 space-y-0.5 text-xs font-medium">
+        <button data-tab="dashboard" class="w-full flex items-center gap-2.5 px-3 py-2 rounded text-left transition hover:bg-slate-800 text-slate-300 active-ops-nav">
+          <span>📊</span> Dashboard
+        </button>
+        <button data-tab="branches" class="w-full flex items-center gap-2.5 px-3 py-2 rounded text-left transition hover:bg-slate-800 text-slate-300">
+          <span>🏢</span> Branches
+        </button>
+        <button data-tab="staff" class="w-full flex items-center gap-2.5 px-3 py-2 rounded text-left transition hover:bg-slate-800 text-slate-300">
+          <span>👨‍💼</span> Staff Users
+        </button>
+        <button data-tab="customers" class="w-full flex items-center gap-2.5 px-3 py-2 rounded text-left transition hover:bg-slate-800 text-slate-300">
+          <span>👥</span> Customers & KYC
+        </button>
+        <button data-tab="accounts" class="w-full flex items-center gap-2.5 px-3 py-2 rounded text-left transition hover:bg-slate-800 text-slate-300">
+          <span>💳</span> CASA Accounts
+        </button>
+        <button data-tab="deposits" class="w-full flex items-center gap-2.5 px-3 py-2 rounded text-left transition hover:bg-slate-800 text-slate-300">
+          <span>💰</span> Term Deposits (FD/RD)
+        </button>
+        <button data-tab="loans" class="w-full flex items-center gap-2.5 px-3 py-2 rounded text-left transition hover:bg-slate-800 text-slate-300">
+          <span>📑</span> Loans & Advances
+        </button>
+        <button data-tab="teller" class="w-full flex items-center gap-2.5 px-3 py-2 rounded text-left transition hover:bg-slate-800 text-slate-300">
+          <span>💵</span> Cashier & Teller Desk
+        </button>
+        <button data-tab="accounting" class="w-full flex items-center gap-2.5 px-3 py-2 rounded text-left transition hover:bg-slate-800 text-slate-300">
+          <span>📒</span> General Ledger & Trial Balance
+        </button>
+        <button data-tab="approvals" class="w-full flex items-center justify-between px-3 py-2 rounded text-left transition hover:bg-slate-800 text-slate-300">
+          <span class="flex items-center gap-2.5"><span>⚖️</span> Approvals</span>
+          <span class="bg-amber-500/20 text-amber-300 px-1.5 py-0.5 rounded text-[10px] font-bold" id="nav-pending-count">2</span>
+        </button>
+        <button data-tab="compliance" class="w-full flex items-center justify-between px-3 py-2 rounded text-left transition hover:bg-slate-800 text-slate-300">
+          <span class="flex items-center gap-2.5"><span>🛡️</span> Compliance & AML</span>
+          <span class="bg-rose-500/20 text-rose-300 px-1.5 py-0.5 rounded text-[10px] font-bold">1 Alert</span>
+        </button>
+        <button data-tab="reports" class="w-full flex items-center gap-2.5 px-3 py-2 rounded text-left transition hover:bg-slate-800 text-slate-300">
+          <span>📈</span> Regulatory Reports
+        </button>
+        <button data-tab="sms" class="w-full flex items-center justify-between px-3 py-2 rounded text-left transition hover:bg-slate-800 text-slate-300">
+          <span class="flex items-center gap-2.5"><span>✉️</span> SMS Queue</span>
+          <span class="text-[9px] text-slate-500">Staged</span>
+        </button>
+        <button data-tab="audit" class="w-full flex items-center gap-2.5 px-3 py-2 rounded text-left transition hover:bg-slate-800 text-slate-300">
+          <span>🔒</span> Immutable Audit Trail
+        </button>
+        <button data-tab="settings" class="w-full flex items-center gap-2.5 px-3 py-2 rounded text-left transition hover:bg-slate-800 text-slate-300">
+          <span>⚙️</span> System Parameters
+        </button>
+      </nav>
+    </div>
+
+    <!-- Dual View Switcher Footer -->
+    <div class="p-3 bg-[#060D17] border-t border-slate-800 text-center">
+      <a href="../customer/index.html" class="flex items-center justify-center gap-2 w-full py-1.5 rounded bg-emerald-800/40 text-emerald-300 border border-emerald-700/50 text-xs font-semibold hover:bg-emerald-800/60 transition">
+        📱 Open Customer Portal
+      </a>
+      <a href="../index.html" class="mt-2 block text-[11px] text-slate-400 hover:text-white transition">
+        ⚡ Dual View (Side-by-Side)
+      </a>
+    </div>
+  </aside>
+
+  <!-- ============================================== -->
+  <!-- 2. MAIN VIEWPORT & HEADER -->
+  <!-- ============================================== -->
+  <main class="flex-1 flex flex-col h-screen overflow-hidden bg-slate-100">
+
+    <!-- Top Navigation Bar -->
+    <header class="h-16 bg-white border-b border-slate-200 px-6 flex items-center justify-between shadow-xs shrink-0 z-10">
+      <div class="flex items-center gap-4">
+        <!-- Branch Selector Dropdown -->
+        <div class="flex items-center gap-2">
+          <span class="text-xs font-bold text-slate-500 uppercase">Branch:</span>
+          <select id="top-branch-selector" class="form-select text-xs py-1.5 px-3 font-semibold border-slate-300 rounded bg-slate-50" onchange="handleBranchSwitch(this.value)">
+            <option value="BR001">BR001 - Metro Central (Jaipur)</option>
+            <option value="BR002">BR002 - Alwar Rural (Alwar)</option>
+            <option value="BR003">BR003 - Mandi West (Dausa)</option>
+          </select>
+        </div>
+
+        <!-- Global Search -->
+        <div class="w-72">
+          <input type="text" id="global-search-input" placeholder="Search Account, Member, Loan, Txn..." class="form-input text-xs py-1.5 px-3 bg-slate-50 border-slate-200 rounded" oninput="handleGlobalSearch(this.value)">
+        </div>
+      </div>
+
+      <!-- Treasury & Control Indicators -->
+      <div class="flex items-center gap-6">
+        <div class="text-right">
+          <div class="text-[10px] text-slate-400 font-bold uppercase">Vault Cash</div>
+          <div class="text-sm font-bold font-mono text-slate-900" id="stat-vault-cash">₹24,50,000.00</div>
+        </div>
+        <div class="h-8 w-px bg-slate-200"></div>
+        <div class="text-right">
+          <div class="text-[10px] text-slate-400 font-bold uppercase">Teller Drawer</div>
+          <div class="text-sm font-bold font-mono text-emerald-700" id="stat-teller-till">₹3,50,000.00</div>
+        </div>
+        <div class="h-8 w-px bg-slate-200"></div>
+        <div class="text-right">
+          <div class="text-[10px] text-slate-400 font-bold uppercase">Banking Date</div>
+          <div class="flex items-center gap-1.5">
+            <span class="w-2 h-2 rounded-full bg-emerald-500"></span>
+            <span class="text-xs font-bold font-mono text-slate-800">24-OCT-2026 [OPEN]</span>
+          </div>
+        </div>
+
+        <!-- Pending Approvals Indicator -->
+        <button onclick="switchTab('approvals')" class="relative p-2 rounded-lg bg-amber-50 text-amber-800 border border-amber-200 text-xs font-bold flex items-center gap-1.5 hover:bg-amber-100">
+          <span>⚖️</span>
+          <span id="badge-top-approvals">2 Approvals</span>
+        </button>
+
+        <a href="../customer/index.html" class="btn btn-outline btn-sm text-xs py-1" title="Customer View">
+          📱 Customer PWA
+        </a>
+      </div>
+    </header>
+
+    <!-- ============================================== -->
+    <!-- 3. TAB CONTENT REGION (SCROLLABLE) -->
+    <!-- ============================================== -->
+    <div class="flex-1 overflow-y-auto p-6 space-y-6" id="ops-main-container">
+
+      <!-- ========================================== -->
+      <!-- TAB 1: EXECUTIVE & OPS DASHBOARD -->
+      <!-- ========================================== -->
+      <div id="section-dashboard" class="tab-section space-y-6">
+        
+        <!-- Dashboard Summary Cards (10 Required Metrics) -->
+        <div class="grid grid-cols-5 gap-4">
+          <div class="sfms-card p-4 bg-white border-l-4 border-l-emerald-600">
+            <div class="text-[11px] font-bold text-slate-500 uppercase">1. Total Customers</div>
+            <div class="text-xl font-bold font-mono text-slate-900 mt-1" id="dash-stat-customers">5 Members</div>
+            <div class="text-[10px] text-emerald-700 font-medium mt-1">100% CKYC Compliant</div>
+          </div>
+          <div class="sfms-card p-4 bg-white border-l-4 border-l-blue-600">
+            <div class="text-[11px] font-bold text-slate-500 uppercase">2. Active Accounts</div>
+            <div class="text-xl font-bold font-mono text-slate-900 mt-1" id="dash-stat-accounts">5 Accounts</div>
+            <div class="text-[10px] text-blue-700 font-medium mt-1">CASA & Term Deposits</div>
+          </div>
+          <div class="sfms-card p-4 bg-white border-l-4 border-l-indigo-600">
+            <div class="text-[11px] font-bold text-slate-500 uppercase">3. Total Deposits</div>
+            <div class="text-xl font-bold font-mono text-slate-900 mt-1" id="dash-stat-deposits">₹3,01,550.00</div>
+            <div class="text-[10px] text-indigo-700 font-medium mt-1">Cost of Funds: 4.12%</div>
+          </div>
+          <div class="sfms-card p-4 bg-white border-l-4 border-l-teal-600">
+            <div class="text-[11px] font-bold text-slate-500 uppercase">4. Loan Portfolio</div>
+            <div class="text-xl font-bold font-mono text-slate-900 mt-1" id="dash-stat-loans">₹3,17,000.00</div>
+            <div class="text-[10px] text-teal-700 font-medium mt-1">Gross Yield: 11.2%</div>
+          </div>
+          <div class="sfms-card p-4 bg-white border-l-4 border-l-cyan-600">
+            <div class="text-[11px] font-bold text-slate-500 uppercase">5. Today's Deposits</div>
+            <div class="text-xl font-bold font-mono text-emerald-700 mt-1" id="dash-stat-today-dep">₹15,000.00</div>
+            <div class="text-[10px] text-slate-500 font-medium mt-1">1 Inward Cash Vouchers</div>
+          </div>
+          <div class="sfms-card p-4 bg-white border-l-4 border-l-rose-600">
+            <div class="text-[11px] font-bold text-slate-500 uppercase">6. Today's Withdrawals</div>
+            <div class="text-xl font-bold font-mono text-rose-700 mt-1" id="dash-stat-today-wdl">₹0.00</div>
+            <div class="text-[10px] text-slate-500 font-medium mt-1">Zero till cash outflow</div>
+          </div>
+          <div class="sfms-card p-4 bg-white border-l-4 border-l-purple-600">
+            <div class="text-[11px] font-bold text-slate-500 uppercase">7. Today's Collections</div>
+            <div class="text-xl font-bold font-mono text-purple-700 mt-1" id="dash-stat-today-coll">₹9,370.00</div>
+            <div class="text-[10px] text-purple-700 font-medium mt-1">EMI Repayments posted</div>
+          </div>
+          <div class="sfms-card p-4 bg-white border-l-4 border-l-amber-600">
+            <div class="text-[11px] font-bold text-slate-500 uppercase">8. Pending Approvals</div>
+            <div class="text-xl font-bold font-mono text-amber-700 mt-1" id="dash-stat-pending-appr">2 Items</div>
+            <div class="text-[10px] text-amber-700 font-medium mt-1">Maker-Checker Queue</div>
+          </div>
+          <div class="sfms-card p-4 bg-white border-l-4 border-l-red-600">
+            <div class="text-[11px] font-bold text-slate-500 uppercase">9. Overdue Loans</div>
+            <div class="text-xl font-bold font-mono text-slate-900 mt-1">₹0.00 (0 NPA)</div>
+            <div class="text-[10px] text-emerald-700 font-medium mt-1">Gross NPA Ratio: 0.00%</div>
+          </div>
+          <div class="sfms-card p-4 bg-white border-l-4 border-l-orange-600">
+            <div class="text-[11px] font-bold text-slate-500 uppercase">10. Suspicious / Flagged</div>
+            <div class="text-xl font-bold font-mono text-orange-700 mt-1">1 Alert</div>
+            <div class="text-[10px] text-orange-700 font-medium mt-1">AML Surveillance Check</div>
+          </div>
+        </div>
+
+        <!-- Interactive Visual SVG Charts Grid (6 Required Banking Charts) -->
+        <div class="grid grid-cols-3 gap-6">
+          
+          <!-- Chart 1: Deposit Growth Trend -->
+          <div class="sfms-card p-5 bg-white">
+            <div class="flex justify-between items-center mb-3">
+              <h4 class="font-bold text-xs uppercase tracking-wider text-slate-800">1. Deposit Growth Trend (₹ Lakhs)</h4>
+              <span class="text-[10px] text-slate-400">CASA + Term</span>
+            </div>
+            <div class="h-44 w-full chart-container">
+              <svg viewBox="0 0 300 120" preserveAspectRatio="none">
+                <path d="M 10,95 Q 60,85 100,75 T 180,50 T 260,30 T 290,20" fill="none" stroke="#107559" stroke-width="3"/>
+                <path d="M 10,95 Q 60,85 100,75 T 180,50 T 260,30 T 290,20 L 290,115 L 10,115 Z" fill="rgba(16, 117, 89, 0.1)"/>
+                <circle cx="10" cy="95" r="3" fill="#107559"/>
+                <circle cx="100" cy="75" r="3" fill="#107559"/>
+                <circle cx="180" cy="50" r="3" fill="#107559"/>
+                <circle cx="290" cy="20" r="4" fill="#094738"/>
+                <text x="10" y="112" font-size="8" fill="#64748b">Apr</text>
+                <text x="90" y="112" font-size="8" fill="#64748b">Jun</text>
+                <text x="170" y="112" font-size="8" fill="#64748b">Aug</text>
+                <text x="260" y="112" font-size="8" fill="#64748b">Oct (₹48.2L)</text>
+              </svg>
+            </div>
+          </div>
+
+          <!-- Chart 2: Disbursement vs Collection -->
+          <div class="sfms-card p-5 bg-white">
+            <div class="flex justify-between items-center mb-3">
+              <h4 class="font-bold text-xs uppercase tracking-wider text-slate-800">2. Disbursement vs Collection</h4>
+              <span class="text-[10px] text-slate-400">Monthly Flow</span>
+            </div>
+            <div class="h-44 w-full chart-container">
+              <svg viewBox="0 0 300 120" preserveAspectRatio="none">
+                <!-- Bar pairs -->
+                <rect x="25" y="40" width="18" height="60" fill="#3b82f6" rx="2"/>
+                <rect x="47" y="55" width="18" height="45" fill="#107559" rx="2"/>
+                <text x="30" y="112" font-size="8" fill="#64748b">Jul</text>
+
+                <rect x="100" y="30" width="18" height="70" fill="#3b82f6" rx="2"/>
+                <rect x="122" y="45" width="18" height="55" fill="#107559" rx="2"/>
+                <text x="105" y="112" font-size="8" fill="#64748b">Aug</text>
+
+                <rect x="175" y="25" width="18" height="75" fill="#3b82f6" rx="2"/>
+                <rect x="197" y="35" width="18" height="65" fill="#107559" rx="2"/>
+                <text x="180" y="112" font-size="8" fill="#64748b">Sep</text>
+
+                <rect x="245" y="20" width="18" height="80" fill="#3b82f6" rx="2"/>
+                <rect x="267" y="30" width="18" height="70" fill="#107559" rx="2"/>
+                <text x="250" y="112" font-size="8" fill="#64748b">Oct</text>
+              </svg>
+            </div>
+          </div>
+
+          <!-- Chart 3: Branch-wise Comparison -->
+          <div class="sfms-card p-5 bg-white">
+            <div class="flex justify-between items-center mb-3">
+              <h4 class="font-bold text-xs uppercase tracking-wider text-slate-800">3. Branch-wise CASA vs Advances</h4>
+              <span class="text-[10px] text-slate-400">Ratio Matrix</span>
+            </div>
+            <div class="h-44 w-full flex flex-col justify-around text-xs">
+              <div>
+                <div class="flex justify-between text-[11px] mb-1 font-semibold">
+                  <span>BR001 - Metro Central</span>
+                  <span class="font-mono text-emerald-800">CD Ratio: 65%</span>
+                </div>
+                <div class="w-full bg-slate-100 h-3 rounded-full overflow-hidden flex">
+                  <div class="bg-emerald-600 h-full" style="width: 60%"></div>
+                  <div class="bg-blue-600 h-full" style="width: 40%"></div>
+                </div>
+              </div>
+
+              <div>
+                <div class="flex justify-between text-[11px] mb-1 font-semibold">
+                  <span>BR002 - Alwar Rural</span>
+                  <span class="font-mono text-emerald-800">CD Ratio: 82%</span>
+                </div>
+                <div class="w-full bg-slate-100 h-3 rounded-full overflow-hidden flex">
+                  <div class="bg-emerald-600 h-full" style="width: 45%"></div>
+                  <div class="bg-blue-600 h-full" style="width: 55%"></div>
+                </div>
+              </div>
+
+              <div>
+                <div class="flex justify-between text-[11px] mb-1 font-semibold">
+                  <span>BR003 - Mandi West</span>
+                  <span class="font-mono text-emerald-800">CD Ratio: 71%</span>
+                </div>
+                <div class="w-full bg-slate-100 h-3 rounded-full overflow-hidden flex">
+                  <div class="bg-emerald-600 h-full" style="width: 52%"></div>
+                  <div class="bg-blue-600 h-full" style="width: 48%"></div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Chart 4: Loan Portfolio by Product -->
+          <div class="sfms-card p-5 bg-white">
+            <div class="flex justify-between items-center mb-3">
+              <h4 class="font-bold text-xs uppercase tracking-wider text-slate-800">4. Portfolio by Product</h4>
+              <span class="text-[10px] text-slate-400">Exposure</span>
+            </div>
+            <div class="h-44 w-full flex items-center justify-between">
+              <svg viewBox="0 0 100 100" class="w-28 h-28">
+                <circle cx="50" cy="50" r="40" fill="transparent" stroke="#107559" stroke-width="16" stroke-dasharray="140 251" transform="rotate(-90 50 50)"/>
+                <circle cx="50" cy="50" r="40" fill="transparent" stroke="#3b82f6" stroke-width="16" stroke-dasharray="75 251" stroke-dashoffset="-140" transform="rotate(-90 50 50)"/>
+                <circle cx="50" cy="50" r="40" fill="transparent" stroke="#f59e0b" stroke-width="16" stroke-dasharray="36 251" stroke-dashoffset="-215" transform="rotate(-90 50 50)"/>
+              </svg>
+              <div class="space-y-2 text-xs">
+                <div class="flex items-center gap-2"><span class="w-3 h-3 bg-emerald-700 rounded-sm"></span> MSME: 56%</div>
+                <div class="flex items-center gap-2"><span class="w-3 h-3 bg-blue-500 rounded-sm"></span> Agri Loans: 30%</div>
+                <div class="flex items-center gap-2"><span class="w-3 h-3 bg-amber-500 rounded-sm"></span> Micro JLG: 14%</div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Chart 5: Overdue / NPA Ageing Matrix -->
+          <div class="sfms-card p-5 bg-white">
+            <div class="flex justify-between items-center mb-3">
+              <h4 class="font-bold text-xs uppercase tracking-wider text-slate-800">5. RBI IRAC Asset Quality</h4>
+              <span class="text-[10px] text-emerald-700 font-bold">100% Standard</span>
+            </div>
+            <div class="h-44 w-full flex flex-col justify-center space-y-2 text-xs">
+              <div class="flex justify-between text-[11px]">
+                <span class="font-bold text-slate-700">Standard (0 DPD):</span>
+                <span class="font-mono font-bold text-emerald-700">₹3,17,000.00 (100%)</span>
+              </div>
+              <div class="flex justify-between text-[11px]">
+                <span class="text-slate-500">SMA-0 (1 - 30 DPD):</span>
+                <span class="font-mono text-slate-600">₹0.00 (0%)</span>
+              </div>
+              <div class="flex justify-between text-[11px]">
+                <span class="text-slate-500">SMA-1 (31 - 60 DPD):</span>
+                <span class="font-mono text-slate-600">₹0.00 (0%)</span>
+              </div>
+              <div class="flex justify-between text-[11px]">
+                <span class="text-slate-500">SMA-2 (61 - 90 DPD):</span>
+                <span class="font-mono text-slate-600">₹0.00 (0%)</span>
+              </div>
+              <div class="flex justify-between text-[11px]">
+                <span class="font-bold text-rose-700">NPA (> 90 DPD):</span>
+                <span class="font-mono font-bold text-rose-700">₹0.00 (0.00%)</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Chart 6: Customer Growth -->
+          <div class="sfms-card p-5 bg-white">
+            <div class="flex justify-between items-center mb-3">
+              <h4 class="font-bold text-xs uppercase tracking-wider text-slate-800">6. Monthly Customer Onboarding</h4>
+              <span class="text-[10px] text-slate-400">UCIC Sourcing</span>
+            </div>
+            <div class="h-44 w-full chart-container">
+              <svg viewBox="0 0 300 120" preserveAspectRatio="none">
+                <rect x="25" y="65" width="28" height="35" fill="#107559" rx="3"/>
+                <text x="32" y="112" font-size="8" fill="#64748b">Jul (+18)</text>
+
+                <rect x="95" y="50" width="28" height="50" fill="#107559" rx="3"/>
+                <text x="102" y="112" font-size="8" fill="#64748b">Aug (+24)</text>
+
+                <rect x="165" y="35" width="28" height="65" fill="#107559" rx="3"/>
+                <text x="172" y="112" font-size="8" fill="#64748b">Sep (+31)</text>
+
+                <rect x="235" y="20" width="28" height="80" fill="#094738" rx="3"/>
+                <text x="242" y="112" font-size="8" fill="#64748b">Oct (+42)</text>
+              </svg>
+            </div>
+          </div>
+        </div>
+
+        <!-- Operational Widgets: Maker-Checker Queue & AML Surveillance -->
+        <div class="grid grid-cols-2 gap-6">
+          
+          <!-- Maker-Checker Queue Widget -->
+          <div class="sfms-card p-5 bg-white">
+            <div class="flex justify-between items-center pb-3 border-b border-slate-200">
+              <div class="flex items-center gap-2">
+                <span class="text-base">⚖️</span>
+                <h3 class="font-bold text-xs uppercase tracking-wider text-slate-900">Maker-Checker Authorization Queue</h3>
+              </div>
+              <span class="text-[10px] bg-amber-100 text-amber-800 font-bold px-2 py-0.5 rounded">Four-Eye Principle</span>
+            </div>
+            <div class="divide-y divide-slate-100 mt-2" id="widget-maker-checker-list">
+              <!-- Dynamically populated -->
+            </div>
+          </div>
+
+          <!-- Compliance & AML Real-time Alerts -->
+          <div class="sfms-card p-5 bg-white">
+            <div class="flex justify-between items-center pb-3 border-b border-slate-200">
+              <div class="flex items-center gap-2">
+                <span class="text-base">🛡️</span>
+                <h3 class="font-bold text-xs uppercase tracking-wider text-slate-900">AML / PMLA Surveillance Alerts</h3>
+              </div>
+              <span class="text-[10px] bg-rose-100 text-rose-800 font-bold px-2 py-0.5 rounded">FIU-IND Staged</span>
+            </div>
+            <div class="divide-y divide-slate-100 mt-2" id="widget-aml-alerts-list">
+              <!-- Dynamically populated -->
+            </div>
+          </div>
+        </div>
+
+        <!-- Branch Performance Master Table -->
+        <div class="sfms-card p-5 bg-white">
+          <div class="flex justify-between items-center mb-4">
+            <div>
+              <h3 class="font-bold text-xs uppercase tracking-wider text-slate-900">Branch Performance Matrix (RBI Master Returns)</h3>
+              <p class="text-[11px] text-slate-500">Federated performance overview across operational spokes</p>
+            </div>
+            <button onclick="exportBranchMatrixCSV()" class="btn btn-outline btn-sm text-xs">
+              📥 Export Matrix CSV
+            </button>
+          </div>
+          <div class="overflow-x-auto">
+            <table class="w-full text-left text-xs">
+              <thead class="bg-slate-50 text-slate-600 font-semibold border-b border-slate-200 text-[10px] uppercase">
+                <tr>
+                  <th class="py-2.5 px-4">Branch Code & Name</th>
+                  <th class="py-2.5 px-4">Tier</th>
+                  <th class="py-2.5 px-4 text-right">Total Deposits</th>
+                  <th class="py-2.5 px-4 text-right">Loan Outstanding</th>
+                  <th class="py-2.5 px-4 text-right">Today Collections</th>
+                  <th class="py-2.5 px-4 text-right">Overdue / NPA</th>
+                  <th class="py-2.5 px-4 text-right">Till Cash</th>
+                  <th class="py-2.5 px-4 text-center">Status</th>
+                </tr>
+              </thead>
+              <tbody id="branch-performance-body">
+                <!-- Dynamically populated -->
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+      </div>
+
+      <!-- ========================================== -->
+      <!-- TAB 2: GENERAL LEDGER & TRIAL BALANCE -->
+      <!-- ========================================== -->
+      <div id="section-accounting" class="tab-section space-y-6" style="display: none;">
+        <div class="sfms-card p-5 bg-white">
+          <div class="flex justify-between items-center mb-4">
+            <div>
+              <h3 class="font-bold text-sm text-slate-900">Branch Trial Balance (Double-Entry Verification)</h3>
+              <p class="text-xs text-slate-500">Third Schedule Banking Regulation Act Chart of Accounts</p>
+            </div>
+            <div class="flex items-center gap-3">
+              <span id="trial-balance-status-badge" class="sfms-badge verified text-xs">
+                Zero Variance (Balanced)
+              </span>
+              <button onclick="renderTrialBalance()" class="btn btn-outline btn-sm text-xs">
+                🔄 Recalculate
+              </button>
+            </div>
+          </div>
+          <div class="overflow-x-auto">
+            <table class="w-full text-left text-xs">
+              <thead class="bg-slate-50 text-slate-600 font-bold border-b border-slate-200 text-[10px] uppercase">
+                <tr>
+                  <th class="py-2.5 px-4">GL Code</th>
+                  <th class="py-2.5 px-4">Account Description</th>
+                  <th class="py-2.5 px-4">Category</th>
+                  <th class="py-2.5 px-4 text-right">Total Debits (₹)</th>
+                  <th class="py-2.5 px-4 text-right">Total Credits (₹)</th>
+                </tr>
+              </thead>
+              <tbody id="trial-balance-table-body">
+                <!-- Dynamically populated -->
+              </tbody>
+              <tfoot class="bg-slate-100 font-bold border-t-2 border-slate-300">
+                <tr>
+                  <td colspan="3" class="py-3 px-4 text-right text-xs">GRAND TOTAL:</td>
+                  <td class="py-3 px-4 text-right font-mono text-xs text-slate-900" id="tb-grand-debit">₹0.00</td>
+                  <td class="py-3 px-4 text-right font-mono text-xs text-slate-900" id="tb-grand-credit">₹0.00</td>
+                </tr>
+              </tfoot>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <!-- ========================================== -->
+      <!-- TAB 3: IMMUTABLE AUDIT TRAIL -->
+      <!-- ========================================== -->
+      <div id="section-audit" class="tab-section space-y-6" style="display: none;">
+        <div class="sfms-card p-5 bg-white">
+          <div class="flex justify-between items-center mb-4">
+            <div>
+              <h3 class="font-bold text-sm text-slate-900">Cryptographic Hash-Chained Audit Log</h3>
+              <p class="text-xs text-slate-500">Append-only immutable record of all banking events</p>
+            </div>
+            <button onclick="exportAuditTrailCSV()" class="btn btn-outline btn-sm text-xs">
+              📥 Export Audit CSV
+            </button>
+          </div>
+          <div class="overflow-x-auto">
+            <table class="w-full text-left text-xs font-mono">
+              <thead class="bg-slate-50 text-slate-600 font-bold border-b border-slate-200 text-[10px] uppercase">
+                <tr>
+                  <th class="py-2.5 px-4">Timestamp</th>
+                  <th class="py-2.5 px-4">Action</th>
+                  <th class="py-2.5 px-4">Staff User</th>
+                  <th class="py-2.5 px-4">SHA-256 Record Hash</th>
+                  <th class="py-2.5 px-4">Event Details</th>
+                </tr>
+              </thead>
+              <tbody id="audit-trail-table-body">
+                <!-- Dynamically populated -->
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <!-- Placeholder for other tabs (teller, customers, loans handled via existing modular controllers) -->
+      <div id="section-teller-view" class="tab-section" style="display: none;">
+        <!-- Embedded Teller Screen rendered by ops.js -->
+      </div>
+
+    </div>
+  </main>
+
+  <script src="../js/store.js"></script>
+  <script src="../js/receipt.js"></script>
+  <script src="../js/ops.js"></script>
+</body>
+</html>

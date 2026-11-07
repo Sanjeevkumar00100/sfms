@@ -1,0 +1,527 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>SFMS - Customer Mobile & Online Banking</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="../css/styles.css">
+  <style>
+    .active-cust-nav {
+      color: #107559 !important;
+      font-weight: 700;
+    }
+  </style>
+</head>
+<body class="bg-slate-200 min-h-screen flex flex-col items-center justify-start text-slate-800 p-0 md:py-6">
+
+  <!-- TOP BAR (PORTAL CONTROLS) -->
+  <header class="w-full max-w-4xl bg-white border border-slate-300 rounded-2xl shadow-sm px-6 py-3 mb-5 flex flex-wrap items-center justify-between gap-4">
+    <div class="flex items-center gap-3">
+      <div class="w-9 h-9 rounded-xl bg-emerald-600 text-white flex items-center justify-center font-bold text-lg">
+        🏛️
+      </div>
+      <div>
+        <div class="font-extrabold text-slate-900 text-sm">SFMS Customer Portal</div>
+        <div class="text-[10px] text-emerald-600 font-semibold uppercase">Personal Digital Banking</div>
+      </div>
+    </div>
+
+    <!-- Customer Switcher -->
+    <div class="flex items-center gap-3">
+      <label class="text-xs text-slate-500 font-medium">Switch Customer Profile:</label>
+      <select id="customer-profile-selector" class="form-select text-xs py-1.5 px-3 rounded-lg border-slate-300">
+        <!-- Dynamically populated -->
+      </select>
+    </div>
+
+    <!-- Portal Navigation -->
+    <div class="flex items-center gap-2">
+      <button onclick="toggleDeviceView()" id="device-view-btn" class="btn btn-outline btn-sm text-xs py-1">
+        🖥️ Expand to Desktop
+      </button>
+      <a href="../ops/index.html" class="btn btn-secondary btn-sm text-xs py-1">
+        💼 Core Banking Ops
+      </a>
+      <a href="../index.html" class="btn btn-primary btn-sm text-xs py-1">
+        ⚡ Dual View
+      </a>
+    </div>
+  </header>
+
+  <!-- DEVICE CONTAINER (PHONE SHELL OR FULLSCREEN) -->
+  <div id="device-container" class="mobile-device-frame">
+    <div class="mobile-notch"></div>
+
+    <!-- MOBILE SCREEN INNER CONTENT -->
+    <div class="mobile-screen-content">
+
+      <!-- APP HEADER / STATUS BAR -->
+      <div class="pt-8 pb-3 px-5 bg-gradient-to-r from-emerald-800 to-teal-900 text-white shrink-0 shadow-md">
+        <div class="flex justify-between items-center">
+          <div>
+            <div class="text-[10px] text-emerald-300 font-medium">GOOD DAY,</div>
+            <div class="font-extrabold text-base text-white cust-fullname-display">Priya Sharma</div>
+          </div>
+          <div class="flex items-center gap-2">
+            <span class="sfms-badge verified text-[9px] bg-emerald-700/80 text-white">KYC VERIFIED</span>
+            <div class="w-8 h-8 rounded-full bg-emerald-700 border border-emerald-500 flex items-center justify-center font-bold text-xs">
+              👤
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- APP BODY VIEWPORT (SCROLLABLE) -->
+      <div class="flex-1 overflow-y-auto p-4 space-y-4">
+
+        <!-- ============================================== -->
+        <!-- 1. HOME TAB -->
+        <!-- ============================================== -->
+        <section id="cust-section-home" class="cust-section">
+          
+          <!-- Primary Account Card -->
+          <div class="p-5 rounded-2xl bg-gradient-to-br from-slate-900 via-slate-800 to-emerald-950 text-white shadow-lg relative overflow-hidden">
+            <div class="absolute -right-6 -bottom-6 w-32 h-32 rounded-full bg-emerald-500/10 pointer-events-none"></div>
+
+            <div class="flex justify-between items-start mb-4">
+              <div>
+                <span class="text-[10px] uppercase font-bold text-emerald-400 tracking-wider">Primary Savings A/C</span>
+                <div class="text-xs text-slate-300 font-mono mt-0.5" id="cust-primary-accnum">A/C •••• 4562</div>
+              </div>
+              <span class="text-xs bg-emerald-500/20 text-emerald-300 px-2 py-0.5 rounded font-mono">
+                IFSC: SFMS0001001
+              </span>
+            </div>
+
+            <div class="mb-4">
+              <div class="text-[11px] text-slate-400">Available Balance</div>
+              <div class="text-2xl font-extrabold font-mono text-white mt-0.5" id="cust-primary-balance">₹0.00</div>
+            </div>
+
+            <div class="flex items-center justify-between pt-3 border-t border-slate-700/80 text-[11px]">
+              <span class="text-slate-400">Net Relationship Value:</span>
+              <span class="font-bold text-emerald-400 font-mono" id="cust-net-worth">₹0.00</span>
+            </div>
+          </div>
+
+          <!-- Quick Action Tiles -->
+          <div class="grid grid-cols-4 gap-2 pt-1">
+            <button onclick="switchCustomerTab('transfer')" class="p-3 bg-white rounded-xl border border-slate-200 shadow-xs flex flex-col items-center justify-center text-center hover:bg-emerald-50/50 transition">
+              <span class="text-xl mb-1">💸</span>
+              <span class="text-[10px] font-bold text-slate-800">Send Money</span>
+            </button>
+            <button onclick="switchCustomerTab('passbook')" class="p-3 bg-white rounded-xl border border-slate-200 shadow-xs flex flex-col items-center justify-center text-center hover:bg-emerald-50/50 transition">
+              <span class="text-xl mb-1">📜</span>
+              <span class="text-[10px] font-bold text-slate-800">Passbook</span>
+            </button>
+            <button onclick="switchCustomerTab('deposits')" class="p-3 bg-white rounded-xl border border-slate-200 shadow-xs flex flex-col items-center justify-center text-center hover:bg-emerald-50/50 transition">
+              <span class="text-xl mb-1">💰</span>
+              <span class="text-[10px] font-bold text-slate-800">FD / RD</span>
+            </button>
+            <button onclick="switchCustomerTab('loans')" class="p-3 bg-white rounded-xl border border-slate-200 shadow-xs flex flex-col items-center justify-center text-center hover:bg-emerald-50/50 transition">
+              <span class="text-xl mb-1">📑</span>
+              <span class="text-[10px] font-bold text-slate-800">Pay EMI</span>
+            </button>
+          </div>
+
+          <!-- Linked Accounts & Deposits Carousel -->
+          <div class="space-y-2 pt-2">
+            <div class="flex justify-between items-center text-xs">
+              <span class="font-bold text-slate-800 uppercase tracking-wider text-[11px]">My Accounts & Products</span>
+              <span class="text-slate-400 text-[10px]">Real-time SFMS Sync</span>
+            </div>
+            <div id="cust-accounts-list" class="space-y-2">
+              <!-- Dynamically populated -->
+            </div>
+          </div>
+
+          <!-- Recent Transactions -->
+          <div class="space-y-2 pt-2">
+            <div class="flex justify-between items-center text-xs">
+              <span class="font-bold text-slate-800 uppercase tracking-wider text-[11px]">Recent Transactions</span>
+              <button class="text-emerald-700 font-bold text-[11px]" onclick="switchCustomerTab('passbook')">View All</button>
+            </div>
+            <div id="cust-recent-txns-list" class="space-y-2">
+              <!-- Dynamically populated -->
+            </div>
+          </div>
+        </section>
+
+        <!-- ============================================== -->
+        <!-- 2. PASSBOOK TAB -->
+        <!-- ============================================== -->
+        <section id="cust-section-passbook" class="cust-section" style="display: none;">
+          <div class="flex justify-between items-center mb-3">
+            <h3 class="font-bold text-sm text-slate-900">E-Passbook & Statement</h3>
+            <button class="btn btn-outline btn-sm text-[11px] py-1" onclick="downloadCustomerStatementCSV()">
+              📥 Download
+            </button>
+          </div>
+
+          <!-- Filter Pills -->
+          <div class="flex gap-1.5 mb-3 overflow-x-auto pb-1 text-xs">
+            <button data-passbook-filter="ALL" class="btn btn-primary btn-sm text-xs py-1 px-3" onclick="setPassbookFilter('ALL')">All</button>
+            <button data-passbook-filter="CREDIT" class="btn btn-outline btn-sm text-xs py-1 px-3" onclick="setPassbookFilter('CREDIT')">Credits</button>
+            <button data-passbook-filter="DEBIT" class="btn btn-outline btn-sm text-xs py-1 px-3" onclick="setPassbookFilter('DEBIT')">Debits</button>
+            <button data-passbook-filter="TRANSFER" class="btn btn-outline btn-sm text-xs py-1 px-3" onclick="setPassbookFilter('TRANSFER')">Transfers</button>
+          </div>
+
+          <div id="cust-passbook-entries" class="space-y-2">
+            <!-- Dynamically populated -->
+          </div>
+        </section>
+
+        <!-- ============================================== -->
+        <!-- 3. TRANSFER TAB -->
+        <!-- ============================================== -->
+        <section id="cust-section-transfer" class="cust-section" style="display: none;">
+          <div class="bg-white p-4 rounded-2xl border border-slate-200 shadow-xs">
+            <h3 class="font-bold text-sm text-slate-900 mb-3">Fast Money Transfer</h3>
+
+            <form onsubmit="handleCustomerTransferSubmit(event)">
+              <div class="form-group">
+                <label class="form-label">Pay From Account</label>
+                <select name="fromAccountId" id="cust-transfer-from-account" class="form-select text-xs" required>
+                  <!-- Populated dynamically -->
+                </select>
+              </div>
+
+              <div class="form-group">
+                <label class="form-label">Recipient SFMS Account Number *</label>
+                <input type="text" name="toAccountNumber" class="form-input text-xs font-mono font-bold" placeholder="e.g. 1001002341" required>
+                <span class="text-[10px] text-slate-400">Demo Accounts: 1001002341 (Rajesh), 1001007893 (Amit), 1001008904 (Sunita)</span>
+              </div>
+
+              <!-- Quick amount chips -->
+              <div class="mb-3">
+                <div class="text-[11px] text-slate-500 font-semibold mb-1">Quick Select Amount</div>
+                <div class="flex gap-1.5 flex-wrap">
+                  <button type="button" class="btn btn-outline btn-sm text-xs py-1 px-2.5" onclick="setQuickTransferAmount(500)">₹500</button>
+                  <button type="button" class="btn btn-outline btn-sm text-xs py-1 px-2.5" onclick="setQuickTransferAmount(1000)">₹1,000</button>
+                  <button type="button" class="btn btn-outline btn-sm text-xs py-1 px-2.5" onclick="setQuickTransferAmount(2500)">₹2,500</button>
+                  <button type="button" class="btn btn-outline btn-sm text-xs py-1 px-2.5" onclick="setQuickTransferAmount(5000)">₹5,000</button>
+                </div>
+              </div>
+
+              <div class="form-group">
+                <label class="form-label">Amount (₹) *</label>
+                <input type="number" step="1" name="amount" id="cust-transfer-amount" class="form-input font-bold font-mono text-base text-emerald-700" placeholder="0" required>
+              </div>
+
+              <div class="form-group">
+                <label class="form-label">Remarks / Purpose</label>
+                <input type="text" name="narration" class="form-input text-xs" placeholder="e.g. Payment for grocery goods">
+              </div>
+
+              <div class="form-group">
+                <label class="form-label">Security PIN (Default: 1234) *</label>
+                <input type="password" maxlength="4" name="securityPin" class="form-input text-center text-lg tracking-widest font-mono" placeholder="••••" required>
+              </div>
+
+              <button type="submit" class="btn btn-primary w-full py-2.5 text-xs font-bold mt-2">
+                🔒 Authorize & Send Instantly
+              </button>
+            </form>
+          </div>
+        </section>
+
+        <!-- ============================================== -->
+        <!-- 4. DEPOSITS (FD / RD) TAB -->
+        <!-- ============================================== -->
+        <section id="cust-section-deposits" class="cust-section" style="display: none;">
+          <!-- Interactive FD Calculator -->
+          <div class="bg-white p-4 rounded-2xl border border-slate-200 shadow-xs mb-4">
+            <h3 class="font-bold text-sm text-slate-900 mb-2">Term Deposit Calculator</h3>
+            
+            <div class="space-y-3 text-xs">
+              <div>
+                <label class="form-label">Investment Amount: <span id="fd-calc-amount-label" class="font-bold text-emerald-700">₹50,000</span></label>
+                <input type="range" id="fd-calc-amount" min="5000" max="500000" step="5000" value="50000" class="w-full accent-emerald-600" oninput="document.getElementById('fd-calc-amount-label').innerText='₹'+Number(this.value).toLocaleString('en-IN'); calculateDepositCalculator()">
+              </div>
+
+              <div>
+                <label class="form-label">Tenure (Months): <span id="fd-calc-term-label" class="font-bold text-emerald-700">12 Months</span></label>
+                <input type="range" id="fd-calc-term" min="3" max="60" step="3" value="12" class="w-full accent-emerald-600" oninput="document.getElementById('fd-calc-term-label').innerText=this.value+' Months'; calculateDepositCalculator()">
+              </div>
+
+              <div class="p-3 bg-emerald-50 rounded-xl flex justify-between items-center text-xs">
+                <div>
+                  <div class="text-slate-500">Interest Earned</div>
+                  <div class="font-bold text-emerald-700 font-mono text-sm" id="fd-calc-interest">₹3,875.00</div>
+                </div>
+                <div class="text-right">
+                  <div class="text-slate-500">Maturity Value</div>
+                  <div class="font-extrabold text-slate-900 font-mono text-sm" id="fd-calc-maturity">₹53,875.00</div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Instant Open FD Form -->
+            <form onsubmit="handleOpenDepositSubmit(event)" class="mt-4 pt-3 border-t border-slate-100">
+              <div class="grid grid-cols-2 gap-2 text-xs mb-3">
+                <div>
+                  <label class="form-label">Debit Account</label>
+                  <select name="linkedAccountId" id="cust-deposit-account-select" class="form-select text-xs" required>
+                    <!-- Populated dynamically -->
+                  </select>
+                </div>
+                <div>
+                  <label class="form-label">Deposit Type</label>
+                  <select name="depositType" class="form-select text-xs">
+                    <option value="FIXED_DEPOSIT">Fixed Deposit (FD)</option>
+                    <option value="RECURRING_DEPOSIT">Recurring Deposit (RD)</option>
+                  </select>
+                </div>
+              </div>
+              <input type="hidden" name="amount" id="deposit-form-amt-hidden" value="50000">
+              <input type="hidden" name="termMonths" id="deposit-form-term-hidden" value="12">
+              <button type="submit" class="btn btn-primary w-full text-xs py-2 font-bold" onclick="document.getElementById('deposit-form-amt-hidden').value = document.getElementById('fd-calc-amount').value; document.getElementById('deposit-form-term-hidden').value = document.getElementById('fd-calc-term').value;">
+                + Open Deposit Certificate
+              </button>
+            </form>
+          </div>
+
+          <div class="space-y-2">
+            <h4 class="font-bold text-xs uppercase tracking-wider text-slate-800">My Active Term Deposits</h4>
+            <div id="cust-active-deposits-list">
+              <!-- Dynamically populated -->
+            </div>
+          </div>
+        </section>
+
+        <!-- ============================================== -->
+        <!-- 5. LOANS TAB -->
+        <!-- ============================================== -->
+        <section id="cust-section-loans" class="cust-section" style="display: none;">
+          <div class="flex justify-between items-center mb-3">
+            <h3 class="font-bold text-sm text-slate-900">Loans & Micro-Credit</h3>
+            <button class="btn btn-primary btn-sm text-[11px] py-1" onclick="openModal('modal-cust-apply-loan')">
+              + Apply New Loan
+            </button>
+          </div>
+
+          <div id="cust-active-loans-list" class="space-y-3">
+            <!-- Dynamically populated -->
+          </div>
+        </section>
+
+        <!-- ============================================== -->
+        <!-- 6. VIRTUAL DEBIT CARD TAB -->
+        <!-- ============================================== -->
+        <section id="cust-section-card" class="cust-section" style="display: none;">
+          <div class="text-center text-xs text-slate-500 mb-3">
+            Tap the card to view CVV & Expiry
+          </div>
+
+          <!-- 3D Card -->
+          <div class="virtual-card-wrapper mb-4">
+            <div class="virtual-card" id="virtual-debit-card" onclick="toggleCardFlip()">
+              <!-- FRONT -->
+              <div class="virtual-card-front">
+                <div class="flex justify-between items-center">
+                  <div class="font-extrabold tracking-widest text-sm">SFMS BHARAT</div>
+                  <span class="text-xs font-mono font-bold">RuPay PLATINUM</span>
+                </div>
+
+                <div class="card-chip"></div>
+
+                <div>
+                  <div class="font-mono text-base font-bold tracking-widest" id="card-num-display">4218 •••• •••• 6789</div>
+                  <div class="flex justify-between items-end mt-2 text-[10px]">
+                    <div>
+                      <div class="text-[8px] text-emerald-200 uppercase">Card Holder</div>
+                      <div class="font-bold tracking-wider" id="card-holder-name">PRIYA SHARMA</div>
+                    </div>
+                    <div>
+                      <div class="text-[8px] text-emerald-200 uppercase">Valid Thru</div>
+                      <div class="font-mono font-bold" id="card-expiry-display">11/30</div>
+                    </div>
+                  </div>
+                </div>
+
+                <!-- Locked Overlay -->
+                <div class="card-locked-overlay" id="card-locked-overlay" style="display: none;">
+                  <span class="text-2xl">🔒</span>
+                  <span class="font-bold text-xs uppercase tracking-wider text-rose-400">CARD TEMPORARILY FROZEN</span>
+                </div>
+              </div>
+
+              <!-- BACK -->
+              <div class="virtual-card-back">
+                <div class="card-magnetic-stripe"></div>
+                <div class="card-signature-panel">
+                  <span class="text-[10px] text-slate-500 mr-2">CVV:</span>
+                  <span id="card-cvv-display">819</span>
+                </div>
+                <div class="p-4 text-[9px] text-slate-400">
+                  Customer 24x7 Helpline: 1800-200-SFMS. Do not share your PIN or CVV with anyone.
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Card Controls -->
+          <div class="bg-white p-4 rounded-2xl border border-slate-200 shadow-xs space-y-4 text-xs">
+            <div class="flex items-center justify-between">
+              <div>
+                <div class="font-bold text-slate-800">Lock / Freeze Card</div>
+                <div class="text-slate-400 text-[10px]">Instantly disable all transactions</div>
+              </div>
+              <input type="checkbox" id="card-lock-toggle" class="w-5 h-5 accent-rose-600" onchange="handleCardLockChange(this.checked)">
+            </div>
+
+            <div class="flex items-center justify-between border-t border-slate-100 pt-3">
+              <div>
+                <div class="font-bold text-slate-800">Online Transactions</div>
+                <div class="text-slate-400 text-[10px]">Enable E-Commerce & UPI payments</div>
+              </div>
+              <input type="checkbox" id="card-online-toggle" class="w-5 h-5 accent-emerald-600" onchange="handleCardOnlineChange(this.checked)">
+            </div>
+
+            <div class="border-t border-slate-100 pt-3">
+              <div class="flex justify-between items-center mb-1">
+                <span class="font-bold text-slate-800">Daily ATM Limit</span>
+                <span class="font-bold text-emerald-700 font-mono" id="card-limit-value">₹25,000</span>
+              </div>
+              <input type="range" min="5000" max="100000" step="5000" value="25000" id="card-limit-slider" class="w-full accent-emerald-600" oninput="handleCardLimitChange(this.value)">
+            </div>
+          </div>
+        </section>
+
+        <!-- ============================================== -->
+        <!-- 7. PROFILE TAB -->
+        <!-- ============================================== -->
+        <section id="cust-section-profile" class="cust-section" style="display: none;">
+          <div class="bg-white p-4 rounded-2xl border border-slate-200 shadow-xs mb-4">
+            <h3 class="font-bold text-sm text-slate-900 mb-3">Customer Profile & KYC</h3>
+            <div id="cust-profile-details">
+              <!-- Dynamically populated -->
+            </div>
+          </div>
+
+          <!-- Self Service Desk -->
+          <div class="bg-white p-4 rounded-2xl border border-slate-200 shadow-xs space-y-2">
+            <h4 class="font-bold text-xs uppercase tracking-wider text-slate-800 mb-2">Self Service Requests</h4>
+            <button onclick="handleChequeBookRequest()" class="w-full flex items-center justify-between p-2.5 rounded-lg border border-slate-100 hover:bg-slate-50 text-xs">
+              <span>📖 Request New Cheque Book</span>
+              <span class="text-slate-400">→</span>
+            </button>
+            <button onclick="downloadCustomerStatementCSV()" class="w-full flex items-center justify-between p-2.5 rounded-lg border border-slate-100 hover:bg-slate-50 text-xs">
+              <span>📄 Account Balance Certificate</span>
+              <span class="text-slate-400">→</span>
+            </button>
+            <div class="p-3 bg-slate-50 rounded-lg text-[11px] text-slate-500 mt-2">
+              Nearest Branch: Metro Central (BR001) • 1.2 km away
+            </div>
+          </div>
+        </section>
+
+      </div>
+
+      <!-- BOTTOM NAVIGATION BAR -->
+      <nav class="h-16 bg-white border-t border-slate-200 flex items-center justify-around px-2 shrink-0 shadow-lg">
+        <button data-cust-tab="home" class="flex flex-col items-center justify-center text-slate-400 hover:text-emerald-700 active-cust-nav transition">
+          <span class="text-lg">🏠</span>
+          <span class="text-[10px] font-semibold mt-0.5">Home</span>
+        </button>
+        <button data-cust-tab="passbook" class="flex flex-col items-center justify-center text-slate-400 hover:text-emerald-700 transition">
+          <span class="text-lg">📜</span>
+          <span class="text-[10px] font-semibold mt-0.5">Passbook</span>
+        </button>
+        <button data-cust-tab="transfer" class="flex flex-col items-center justify-center text-slate-400 hover:text-emerald-700 transition">
+          <span class="text-lg">💸</span>
+          <span class="text-[10px] font-semibold mt-0.5">Pay</span>
+        </button>
+        <button data-cust-tab="deposits" class="flex flex-col items-center justify-center text-slate-400 hover:text-emerald-700 transition">
+          <span class="text-lg">💰</span>
+          <span class="text-[10px] font-semibold mt-0.5">Deposits</span>
+        </button>
+        <button data-cust-tab="loans" class="flex flex-col items-center justify-center text-slate-400 hover:text-emerald-700 transition">
+          <span class="text-lg">📑</span>
+          <span class="text-[10px] font-semibold mt-0.5">Loans</span>
+        </button>
+        <button data-cust-tab="card" class="flex flex-col items-center justify-center text-slate-400 hover:text-emerald-700 transition">
+          <span class="text-lg">💳</span>
+          <span class="text-[10px] font-semibold mt-0.5">Cards</span>
+        </button>
+        <button data-cust-tab="profile" class="flex flex-col items-center justify-center text-slate-400 hover:text-emerald-700 transition">
+          <span class="text-lg">👤</span>
+          <span class="text-[10px] font-semibold mt-0.5">Profile</span>
+        </button>
+      </nav>
+
+    </div>
+  </div>
+
+  <!-- MODAL: APPLY FOR LOAN -->
+  <div class="sfms-modal-backdrop" id="modal-cust-apply-loan" style="display: none;">
+    <div class="sfms-modal-content p-5" style="max-width: 420px;">
+      <div class="flex justify-between items-center pb-2 border-b border-slate-100 mb-3">
+        <h3 class="font-bold text-sm text-slate-900">Apply for Micro-Credit / Loan</h3>
+        <button class="btn btn-outline btn-sm" onclick="closeModal('modal-cust-apply-loan')">✕</button>
+      </div>
+
+      <form onsubmit="handleCustomerApplyLoanSubmit(event)">
+        <div class="space-y-3 text-xs">
+          <div class="form-group">
+            <label class="form-label">Loan Type *</label>
+            <select name="loanType" class="form-select text-xs">
+              <option value="MSME Small Enterprise Loan">MSME Small Enterprise Loan (11.5% p.a.)</option>
+              <option value="Microfinance SHG Group Loan">Microfinance SHG Group Loan (10.0% p.a.)</option>
+              <option value="Agri Equipment & Pump Loan">Agri Equipment Loan (9.25% p.a.)</option>
+              <option value="Personal Loan">Personal Loan (12.0% p.a.)</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Required Amount (₹) *</label>
+            <input type="number" step="5000" name="amount" value="50000" class="form-input font-bold font-mono text-slate-900" required>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Tenure (Months) *</label>
+            <select name="termMonths" class="form-select text-xs">
+              <option value="6">6 Months</option>
+              <option value="12" selected>12 Months</option>
+              <option value="24">24 Months</option>
+              <option value="36">36 Months</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Purpose of Loan</label>
+            <input type="text" name="purpose" class="form-input text-xs" placeholder="e.g. Inventory purchase for shop" required>
+          </div>
+        </div>
+
+        <div class="flex justify-end gap-2 mt-4 pt-3 border-t border-slate-100">
+          <button type="button" class="btn btn-secondary text-xs" onclick="closeModal('modal-cust-apply-loan')">Cancel</button>
+          <button type="submit" class="btn btn-primary text-xs">Submit Application</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <script src="../js/store.js"></script>
+  <script src="../js/receipt.js"></script>
+  <script src="../js/customer.js"></script>
+
+  <script>
+    let isDesktopMode = false;
+    function toggleDeviceView() {
+      const container = document.getElementById('device-container');
+      const notch = document.querySelector('.mobile-notch');
+      const btn = document.getElementById('device-view-btn');
+
+      isDesktopMode = !isDesktopMode;
+      if (isDesktopMode) {
+        container.className = 'w-full max-w-4xl h-[840px] bg-white rounded-2xl shadow-xl flex flex-col overflow-hidden border border-slate-300';
+        notch.style.display = 'none';
+        btn.innerText = '📱 Phone View';
+      } else {
+        container.className = 'mobile-device-frame';
+        notch.style.display = 'block';
+        btn.innerText = '🖥️ Expand to Desktop';
+      }
+    }
+  </script>
+</body>
+</html>
