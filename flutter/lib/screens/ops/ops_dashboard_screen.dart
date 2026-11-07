@@ -107,12 +107,6 @@ class _OpsDashboardScreenState extends State<OpsDashboardScreen> {
   // TAB 0: OVERVIEW
   // ==========================================
   Widget _buildOverviewTab() {
-    final totalDeposits = _service.accounts.fold<double>(0.0, (sum, a) => sum + a.balance);
-    final totalLoans = _service.loans
-        .where((l) => l.status == 'ACTIVE')
-        .fold<double>(0.0, (sum, l) => sum + l.outstandingPrincipal);
-    final pendingLoans = _service.loans.where((l) => l.status == 'PENDING_APPROVAL').length;
-
     return RefreshIndicator(
       onRefresh: () async => setState(() {}),
       child: ListView(
@@ -145,8 +139,8 @@ class _OpsDashboardScreenState extends State<OpsDashboardScreen> {
                       children: [
                         const Text('Vault Cash', style: TextStyle(color: Colors.white60, fontSize: 11)),
                         Text(
-                          '₹${_service.vaultCash.toStringAsFixed(2)}',
-                          style: const TextStyle(color: Colors.white, fontSize: 20, fontWeight: FontWeight.bold),
+                          _formatCurrency(_service.vaultCash),
+                          style: const TextStyle(color: Colors.white, fontSize: 19, fontWeight: FontWeight.bold),
                         ),
                       ],
                     ),
@@ -155,8 +149,8 @@ class _OpsDashboardScreenState extends State<OpsDashboardScreen> {
                       children: [
                         const Text('Teller Drawer', style: TextStyle(color: Colors.white60, fontSize: 11)),
                         Text(
-                          '₹${_service.tellerDrawerCash.toStringAsFixed(2)}',
-                          style: const TextStyle(color: Color(0xFF6EE7B7), fontSize: 20, fontWeight: FontWeight.bold),
+                          _formatCurrency(_service.tellerDrawerCash),
+                          style: const TextStyle(color: Color(0xFF6EE7B7), fontSize: 19, fontWeight: FontWeight.bold),
                         ),
                       ],
                     ),
@@ -165,18 +159,122 @@ class _OpsDashboardScreenState extends State<OpsDashboardScreen> {
               ],
             ),
           ),
-          const SizedBox(height: 16),
+          const SizedBox(height: 18),
 
-          // KPI Cards Grid
-          Wrap(
-            spacing: 12,
-            runSpacing: 12,
+          // Section Header
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              _kpiCard('Total Deposits', '₹${totalDeposits.toStringAsFixed(2)}', Icons.savings, const Color(0xFF107559)),
-              _kpiCard('Active Loans Book', '₹${totalLoans.toStringAsFixed(2)}', Icons.assignment, Colors.blue),
-              _kpiCard('Total Members', '${_service.members.length}', Icons.groups, Colors.indigo),
-              _kpiCard('Pending Loans', '$pendingLoans', Icons.hourglass_top, Colors.amber.shade800),
+              const Text(
+                'Financial & Operational Summary',
+                style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Color(0xFF0F172A)),
+              ),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                decoration: BoxDecoration(
+                  color: const Color(0xFF107559).withValues(alpha: 0.1),
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: const Text(
+                  'Live Branch Data',
+                  style: TextStyle(fontSize: 11, fontWeight: FontWeight.w600, color: Color(0xFF107559)),
+                ),
+              ),
             ],
+          ),
+          const SizedBox(height: 12),
+
+          // 9 Summary Cards in Responsive Grid
+          LayoutBuilder(
+            builder: (context, constraints) {
+              final crossAxisCount = constraints.maxWidth > 700 ? 3 : 2;
+              final itemWidth = (constraints.maxWidth - ((crossAxisCount - 1) * 12)) / crossAxisCount;
+
+              return Wrap(
+                spacing: 12,
+                runSpacing: 12,
+                children: [
+                  _summaryCard(
+                    width: itemWidth,
+                    title: 'Total Customers',
+                    value: '${_service.totalCustomers}',
+                    subtitle: 'Registered Members',
+                    icon: Icons.people_alt_rounded,
+                    color: const Color(0xFF2563EB),
+                    badge: 'Active',
+                  ),
+                  _summaryCard(
+                    width: itemWidth,
+                    title: 'Active Accounts',
+                    value: '${_service.activeAccountsCount}',
+                    subtitle: 'Savings & Current',
+                    icon: Icons.account_balance_wallet_rounded,
+                    color: const Color(0xFF0D9488),
+                    badge: 'CASA',
+                  ),
+                  _summaryCard(
+                    width: itemWidth,
+                    title: 'Total Deposits',
+                    value: _formatCurrency(_service.totalDeposits),
+                    subtitle: 'CASA + Term Deposits',
+                    icon: Icons.savings_rounded,
+                    color: const Color(0xFF107559),
+                  ),
+                  _summaryCard(
+                    width: itemWidth,
+                    title: 'Total Loan Portfolio',
+                    value: _formatCurrency(_service.totalLoanPortfolio),
+                    subtitle: 'Principal Outstanding',
+                    icon: Icons.account_balance_rounded,
+                    color: const Color(0xFF4F46E5),
+                  ),
+                  _summaryCard(
+                    width: itemWidth,
+                    title: 'Today’s Deposits',
+                    value: _formatCurrency(_service.todayDeposits),
+                    subtitle: 'Cash & Inward Transfers',
+                    icon: Icons.arrow_downward_rounded,
+                    color: const Color(0xFF16A34A),
+                  ),
+                  _summaryCard(
+                    width: itemWidth,
+                    title: 'Today’s Withdrawals',
+                    value: _formatCurrency(_service.todayWithdrawals),
+                    subtitle: 'Cash Desk & Payouts',
+                    icon: Icons.arrow_upward_rounded,
+                    color: const Color(0xFFEA580C),
+                  ),
+                  _summaryCard(
+                    width: itemWidth,
+                    title: 'Today’s Loan Collections',
+                    value: _formatCurrency(_service.todayLoanCollections),
+                    subtitle: 'EMI & Principle Repaid',
+                    icon: Icons.payments_rounded,
+                    color: const Color(0xFF0891B2),
+                  ),
+                  _summaryCard(
+                    width: itemWidth,
+                    title: 'Pending Approvals',
+                    value: '${_service.pendingApprovalsCount}',
+                    subtitle: 'Loan Underwriting',
+                    icon: Icons.pending_actions_rounded,
+                    color: const Color(0xFFD97706),
+                    badge: _service.pendingApprovalsCount > 0 ? 'Action Req' : null,
+                    badgeColor: Colors.amber.shade900,
+                  ),
+                  _summaryCard(
+                    width: itemWidth,
+                    title: 'Overdue Loans',
+                    value: '${_service.overdueLoansCount}',
+                    subtitle: 'Past Scheduled Due',
+                    icon: Icons.warning_amber_rounded,
+                    color: const Color(0xFFDC2626),
+                    badge: _service.overdueLoansCount > 0 ? 'Attention' : null,
+                    badgeColor: const Color(0xFFDC2626),
+                  ),
+                ],
+              );
+            },
           ),
           const SizedBox(height: 20),
 
@@ -283,26 +381,109 @@ class _OpsDashboardScreenState extends State<OpsDashboardScreen> {
     );
   }
 
-  Widget _kpiCard(String title, String value, IconData icon, Color color) {
+  String _formatCurrency(double amount) {
+    final parts = amount.toStringAsFixed(2).split('.');
+    final integerPart = parts[0];
+    final decimalPart = parts[1];
+
+    String result = '';
+    int len = integerPart.length;
+    if (len <= 3) {
+      result = integerPart;
+    } else {
+      result = integerPart.substring(len - 3);
+      int remaining = len - 3;
+      while (remaining > 0) {
+        if (remaining >= 2) {
+          result = '${integerPart.substring(remaining - 2, remaining)},$result';
+          remaining -= 2;
+        } else {
+          result = '${integerPart.substring(0, remaining)},$result';
+          remaining = 0;
+        }
+      }
+    }
+    return '₹$result.$decimalPart';
+  }
+
+  Widget _summaryCard({
+    required double width,
+    required String title,
+    required String value,
+    required String subtitle,
+    required IconData icon,
+    required Color color,
+    String? badge,
+    Color? badgeColor,
+  }) {
     return Container(
-      width: 160,
+      width: width,
       padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: BorderRadius.circular(16),
         border: Border.all(color: Colors.grey.shade200),
         boxShadow: [
-          BoxShadow(color: Colors.black.withValues(alpha: 0.02), blurRadius: 4, offset: const Offset(0, 2)),
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.03),
+            blurRadius: 8,
+            offset: const Offset(0, 2),
+          ),
         ],
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Icon(icon, color: color, size: 24),
-          const SizedBox(height: 8),
-          Text(title, style: TextStyle(color: Colors.grey.shade600, fontSize: 11)),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Container(
+                padding: const EdgeInsets.all(8),
+                decoration: BoxDecoration(
+                  color: color.withValues(alpha: 0.12),
+                  borderRadius: BorderRadius.circular(10),
+                ),
+                child: Icon(icon, color: color, size: 20),
+              ),
+              if (badge != null)
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
+                  decoration: BoxDecoration(
+                    color: (badgeColor ?? color).withValues(alpha: 0.12),
+                    borderRadius: BorderRadius.circular(6),
+                  ),
+                  child: Text(
+                    badge,
+                    style: TextStyle(
+                      color: badgeColor ?? color,
+                      fontSize: 10,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                ),
+            ],
+          ),
+          const SizedBox(height: 10),
+          Text(
+            title,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: TextStyle(color: Colors.grey.shade600, fontSize: 12, fontWeight: FontWeight.w500),
+          ),
           const SizedBox(height: 4),
-          Text(value, style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+          Text(
+            value,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Color(0xFF0F172A)),
+          ),
+          const SizedBox(height: 2),
+          Text(
+            subtitle,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: TextStyle(color: Colors.grey.shade400, fontSize: 10),
+          ),
         ],
       ),
     );

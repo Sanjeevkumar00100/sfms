@@ -26,6 +26,36 @@ class BankingService extends ChangeNotifier {
   List<LoanModel> get loans => List.unmodifiable(_loans);
   List<TermDepositModel> get termDeposits => List.unmodifiable(_termDeposits);
 
+  // Dashboard Summary Metrics
+  int get totalCustomers => _members.length;
+  int get activeAccountsCount => _accounts.where((a) => a.status == 'ACTIVE').length;
+  double get totalDeposits =>
+      _accounts.fold<double>(0.0, (sum, a) => sum + a.balance) +
+      _termDeposits.where((td) => td.status == 'ACTIVE').fold<double>(0.0, (sum, td) => sum + td.principal);
+  double get totalLoanPortfolio =>
+      _loans.where((l) => l.status == 'ACTIVE' || l.status == 'OVERDUE').fold<double>(0.0, (sum, l) => sum + l.outstandingPrincipal);
+  double get todayDeposits =>
+      _transactions.where((t) => t.type == 'CREDIT' && (t.category.contains('DEPOSIT') || t.category == 'OPENING_DEPOSIT' || t.category == 'CREDIT' || t.category == 'UPI_INWARD')).fold<double>(0.0, (sum, t) => sum + t.amount);
+  double get todayWithdrawals =>
+      _transactions.where((t) => t.type == 'DEBIT' && (t.category.contains('WITHDRAWAL') || t.category.contains('TRANSFER'))).fold<double>(0.0, (sum, t) => sum + t.amount);
+  double get todayLoanCollections =>
+      _transactions.where((t) => t.category == 'LOAN_EMI' || t.category == 'LOAN_REPAYMENT' || t.category == 'LOAN_COLLECTION').fold<double>(0.0, (sum, t) => sum + t.amount);
+  int get pendingApprovalsCount =>
+      _loans.where((l) => l.status == 'PENDING_APPROVAL').length;
+  int get overdueLoansCount =>
+      _loans.where((l) {
+        if (l.status == 'OVERDUE') return true;
+        if (l.status == 'ACTIVE' && l.nextDueDate.isNotEmpty) {
+          final due = DateTime.tryParse(l.nextDueDate);
+          if (due != null) {
+            final now = DateTime.now();
+            final today = DateTime(now.year, now.month, now.day);
+            return due.isBefore(today);
+          }
+        }
+        return false;
+      }).length;
+
   MemberModel? getMemberById(String id) {
     try {
       return _members.firstWhere((m) => m.id == id);
@@ -358,6 +388,22 @@ class BankingService extends ChangeNotifier {
         narration: 'Auto-debit EMI for Loan LN-2026-0081',
         initiatedBy: 'SYSTEM',
         timestamp: '2026-10-23 05:00:10',
+      ),
+      TransactionModel(
+        id: 'TXN88204',
+        txnNumber: 'TXN-20261024-003',
+        accountId: 'ACC1001',
+        accountNumber: '1001002341',
+        memberId: 'MEM001',
+        type: 'DEBIT',
+        category: 'WITHDRAWAL',
+        channel: 'TELLER_CASH',
+        amount: 8000.00,
+        balanceAfter: 46250.00,
+        reference: 'WDL-CASH-9912',
+        narration: 'Cash withdrawal at Teller desk',
+        initiatedBy: 'TELLER',
+        timestamp: '2026-10-24 14:05:00',
       ),
     ]);
   }
